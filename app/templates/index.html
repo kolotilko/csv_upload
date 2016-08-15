@@ -9,21 +9,19 @@
     </style>
   </head>
   <body>
-    <h1>Flask + Celery Examples</h1>
+
+    <h1>Upload File Form</h1>
   <form id="upload-file" method="post" enctype="multipart/form-data">
-      <fieldset>
+
           <input name="url_text" type="url" value="{{link}}">
           <input name="file" type="file" accept="text/csv">
-      </fieldset>
-      <fieldset>
+            <br>
           <button id="upload-file-btn" type="button">Upload</button>
-      </fieldset>
+
   </form>
     <div id="progress"></div>
-    <hr>
-    <h2>Example 2: Long running task with progress updates</h2>
-    <!--<button onclick="start_long_task();">Start Long Calculation</button><br><br>-->
 
+    <button id="refresh" type="button" hidden="true">Загрузить новый файл</button>
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/nanobar/0.2.1/nanobar.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
@@ -85,6 +83,8 @@
                         $(status_div.childNodes[3]).text('Result: ' + data['state']);
                     }
                     window.localStorage.removeItem('status_url')
+                    document.getElementById('refresh').hidden = false;
+
                 }
                 else {
                     // rerun in 2 seconds
@@ -96,7 +96,14 @@
         }
         $(function() {
             $('#upload-file-btn').click(start_upload_file);
-        });
+        }
+        )
+        $(function() {
+            $('#refresh').click(function(){document.getElementById('upload-file').hidden = false;
+                                           document.getElementById('progress').innerHTML = '';
+                                           document.getElementById('refresh').hidden = true;});
+        }
+        );
     </script>
   </body>
 </html>

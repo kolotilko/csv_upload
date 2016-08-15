@@ -1,10 +1,10 @@
 from __future__ import absolute_import
 from celery import Celery
 
-celery_app = Celery('celery_run',
+celery_app = Celery('app.celery_run',
                 broker='amqp://guest@localhost//',
                 backend='redis://localhost',
-                include=['tasks'])
+                include=['app.tasks'])
 
 
 celery_app.conf.update(
