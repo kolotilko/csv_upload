@@ -8,13 +8,15 @@
         }
     </style>
   </head>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/nanobar/0.2.1/nanobar.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
   <body>
 
     <h1>Upload File Form</h1>
   <form id="upload-file" method="post" enctype="multipart/form-data">
 
-          <input name="url_text" type="url" value="{{link}}">
-          <input name="file" type="file" accept="text/csv">
+          <input name="url_text" type="url" value="{{link}}" id="filename">
+          <input name="file" type="file" accept="text/csv" id="upload">
             <br>
           <button id="upload-file-btn" type="button">Загрузить файл</button>
 
@@ -23,25 +25,40 @@
 
     <button id="refresh" type="button" hidden="true">Загрузить новый файл</button>
 
-    <script src="//cdnjs.cloudflare.com/ajax/libs/nanobar/0.2.1/nanobar.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+
     <script>
-        status_url = localStorage.getItem('status_url')
+        document.getElementById('upload').onchange = uploadOnChange;
+        function uploadOnChange()
+        {
+            var filename = this.value;
+            var lastIndex = filename.lastIndexOf('\\');
+            if (lastIndex >= 0)
+            {
+                filename = filename.substring(lastIndex+1);
+            }
+            document.getElementById('filename').value = filename
+        }
+        status_url = sessionStorage.getItem('status_url')
         if (status_url)
         {
             document.getElementById('upload-file').hidden = true;
-            div = $('<div class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div><hr>');
+            div = $('<div class="progress"><div></div><div></div><div></div><div>&nbsp;</div></div><hr>');
             $('#progress').append(div);
             var nanobar = new Nanobar({
                 bg: '#44f',
                 target: div[0].childNodes[0]
             });
+            percent = sessionStorage.getItem('percent')
+            if (percent){
+                nanobar.go(percent)
+                 $(div[0].childNodes[1]).text(percent + '%');}
+
             update_progress(status_url, nanobar, div[0])
         }
         function start_upload_file() {
             // add task status elements
             document.getElementById('upload-file').hidden = true;
-            div = $('<div class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div><hr>');
+            div = $('<div class="progress"><div></div><div></div><div></div><div></div></div><hr>');
             $('#progress').append(div);
             // create a progress bar
             var nanobar = new Nanobar({
@@ -51,7 +68,10 @@
             var xhr = new XMLHttpRequest();
             xhr.upload.onprogress = function(event){
                 percent = parseInt(event.loaded * 50 / event.total);
+                window.sessionStorage.setItem('percent',percent)
                 nanobar.go(percent);
+                $(div[0].childNodes[1]).text(percent + '%');
+                $(div[0].childNodes[2]).text('Загрузка файла');
             }
             xhr.onload = function(event){
 
@@ -59,53 +79,39 @@
                 if (this.status == 202)
                 {
                     status_url = this.getResponseHeader('Location');
-                    window.localStorage.setItem('status_url', status_url);
+                    window.sessionStorage.setItem('status_url', status_url);
                     update_progress(status_url, nanobar, div[0]);
                 }
             }
             // send ajax POST request to start background job
             var form_data = new FormData($('#upload-file')[0]);
-            xhr.open('POST','/uploadfile')
+            xhr.open('POST','/uploadfile', async=true)
             xhr.send(form_data);
-
-            <!--$.ajax({-->
-                        <!--type: 'POST',-->
-                        <!--url: '/uploadfile',-->
-                        <!--data: form_data,-->
-                        <!--contentType: false,-->
-                        <!--cache: false,-->
-                        <!--processData: false,-->
-                        <!--async: false,-->
-                      <!--success: function(data, status, request) {-->
-                        <!--status_url = request.getResponseHeader('Location');-->
-                        <!--window.localStorage.setItem('status_url', status_url);-->
-                        <!--update_progress(status_url, nanobar, div[0]);-->
-                        <!--}-->
-                    <!--});-->
         }
         function update_progress(status_url, nanobar, status_div) {
             // send GET request to status URL
             $.getJSON(status_url, function(data) {
                 // update UI
-                percent = parseInt(data['current'] * 100 / data['total']);
-                nanobar.go(percent);
-                $(status_div.childNodes[1]).text(percent + '%');
-                $(status_div.childNodes[2]).text(data['status']);
+                if (data['state'] != 'PENDING')
+                {
+                    percent = parseInt(data['current'] * 100 / data['total']);
+                    window.sessionStorage.setItem('percent',percent)
+                    nanobar.go(percent);
+                    $(status_div.childNodes[1]).text(percent + '%');
+                    $(status_div.childNodes[2]).text(data['status']);
+                }
                 if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS') {
-                    if ('result' in data) {
-                        // show result
-                        $(status_div.childNodes[3]).text('Result: ' + data['result']);
-                    }
-                    else {
-                        // something unexpected happened
-                        $(status_div.childNodes[3]).text('Result: ' + data['state']);
-                    }
-                    window.localStorage.removeItem('status_url')
+
+                      // something unexpected happened
+                      $(status_div.childNodes[3]).text('Result: ' + data['state']);
+                    window.sessionStorage.removeItem('percent',percent)
+                    window.sessionStorage.removeItem('status_url')
                     document.getElementById('refresh').hidden = false;
 
                 }
                 else {
                     // rerun in 2 seconds
+
                     setTimeout(function() {
                         update_progress(status_url, nanobar, status_div);
                     }, 2000);
@@ -119,8 +125,10 @@
         $(function() {
             $('#refresh').click(function(){document.getElementById('upload-file').hidden = false;
                                            document.getElementById('progress').innerHTML = '';
-                                           document.getElementById('refresh').hidden = true;});
-        }
+                                           document.getElementById('refresh').hidden = true;
+                                           document.getElementById('upload-file').reset();});
+
+            }
         );
     </script>
   </body>

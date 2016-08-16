@@ -6,7 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 flask_app = Flask(__name__)
 
 UPLOAD_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'files')
-SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:master@localhost/test'
+SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:F708420Dx@localhost/test'
 SQLALCHEMY_MIGRATE_REPO = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'migrations')
 
 flask_app.config['SECRET_KEY'] = 'top-secret!'

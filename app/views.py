@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 
 from app.celery_run import celery_app
 from app.tasks import upload_from_link, upload_from_disk
-
+import uuid
 
 @flask_app.route('/', methods=['GET'])
 def index():
@@ -17,14 +17,17 @@ def index():
 
 @flask_app.route('/uploadfile', methods=['POST'])
 def uploadfile():
-    print(request.files['file'])
-    if request.form['url_text']:
+    '''
+
+    :return:
+    '''
+    if not request.files['file']:
         task = upload_from_link.delay(request.form['url_text'])
     else:
         file = request.files['file']
         filename = secure_filename(file.filename)
 
-        file_path = os.path.join(flask_app.config['UPLOAD_FOLDER'], file.filename)
+        file_path = os.path.join(flask_app.config['UPLOAD_FOLDER'], str(uuid.uuid4()))
         file.save(file_path)
         file.close()
         task = upload_from_disk.delay(file_path)
@@ -34,6 +37,12 @@ def uploadfile():
 
 @flask_app.route('/status/<task_id>')
 def taskstatus(task_id):
+    '''
+    Функция проверяет по пришедшему идентифкатору задачи состояние задачи в очереди и определяет процент выполнения задачи
+
+    :param guid task_id: Идентификатор задачи в celery.
+    :return: JSON объект, содержащий информация о состоянии задачи
+    '''
     task = celery_app.AsyncResult(task_id)
     print(task.state)
     print(task.info)
@@ -42,7 +51,7 @@ def taskstatus(task_id):
             'state': task.state,
             'current': 0,
             'total': 1,
-            'status': 'Pending...'
+            'status': 'Постановка в очередь'
         }
     elif task.state != 'FAILURE':
         response = {
