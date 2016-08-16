@@ -17,6 +17,7 @@ def index():
 
 @flask_app.route('/uploadfile', methods=['POST'])
 def uploadfile():
+    print(request.files['file'])
     if request.form['url_text']:
         task = upload_from_link.delay(request.form['url_text'])
     else:

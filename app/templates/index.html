@@ -16,7 +16,7 @@
           <input name="url_text" type="url" value="{{link}}">
           <input name="file" type="file" accept="text/csv">
             <br>
-          <button id="upload-file-btn" type="button">Upload</button>
+          <button id="upload-file-btn" type="button">Загрузить файл</button>
 
   </form>
     <div id="progress"></div>
@@ -48,22 +48,40 @@
                 bg: '#44f',
                 target: div[0].childNodes[0]
             });
+            var xhr = new XMLHttpRequest();
+            xhr.upload.onprogress = function(event){
+                percent = parseInt(event.loaded * 50 / event.total);
+                nanobar.go(percent);
+            }
+            xhr.onload = function(event){
+
+                <!--alert(xhr.getResponseHeader('Location'))-->
+                if (this.status == 202)
+                {
+                    status_url = this.getResponseHeader('Location');
+                    window.localStorage.setItem('status_url', status_url);
+                    update_progress(status_url, nanobar, div[0]);
+                }
+            }
             // send ajax POST request to start background job
             var form_data = new FormData($('#upload-file')[0]);
-            $.ajax({
-                        type: 'POST',
-                        url: '/uploadfile',
-                        data: form_data,
-                        contentType: false,
-                        cache: false,
-                        processData: false,
-                        async: false,
-                      success: function(data, status, request) {
-                        status_url = request.getResponseHeader('Location');
-                        window.localStorage.setItem('status_url', status_url);
-                        update_progress(status_url, nanobar, div[0]);
-                        }
-                    });
+            xhr.open('POST','/uploadfile')
+            xhr.send(form_data);
+
+            <!--$.ajax({-->
+                        <!--type: 'POST',-->
+                        <!--url: '/uploadfile',-->
+                        <!--data: form_data,-->
+                        <!--contentType: false,-->
+                        <!--cache: false,-->
+                        <!--processData: false,-->
+                        <!--async: false,-->
+                      <!--success: function(data, status, request) {-->
+                        <!--status_url = request.getResponseHeader('Location');-->
+                        <!--window.localStorage.setItem('status_url', status_url);-->
+                        <!--update_progress(status_url, nanobar, div[0]);-->
+                        <!--}-->
+                    <!--});-->
         }
         function update_progress(status_url, nanobar, status_div) {
             // send GET request to status URL
