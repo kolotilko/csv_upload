@@ -1,3 +1,4 @@
+<!--suppress XmlHighlighting, XmlHighlighting -->
 <html>
   <head>
     <title>Flask + Celery Examples</title>
@@ -8,22 +9,32 @@
         }
     </style>
   </head>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/nanobar/0.2.1/nanobar.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="/static/js/nanobar.min.js"></script>
+    <script src="/static/js/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
   <body>
 
     <h1>Upload File Form</h1>
-  <form id="upload-file" method="post" enctype="multipart/form-data">
 
-          <input name="url_text" type="url" value="{{link}}" id="filename">
-          <input name="file" type="file" accept="text/csv" id="upload">
-            <br>
-          <button id="upload-file-btn" type="button">Загрузить файл</button>
+  <form class="form-horizontal" id="upload-file" method="post" enctype="multipart/form-data">
 
+          <label for="filename">Файл</label>
+          <div class="form-group">
+              <input class ="form-control col-sm-10" name="url_text" type="text" value="{{link}}" id="filename" placeholder="example.csv or example.zip.csv">
+              <input  name="file"  type="file" accept="text/csv" id="upload" style="display:none">
+              <input type="button" class="btn btn-default" value="Обзор" onclick="document.getElementById('upload').click();" />
+          </div>
+          <div class="form-group">
+            <button id="upload-file-btn" class="btn btn-default" type="button">Загрузить файл</button>
+          </div>
   </form>
+
+
     <div id="progress"></div>
 
-    <button id="refresh" type="button" hidden="true">Загрузить новый файл</button>
+    <button id="refresh" type="button"  class="btn btn-primary" hidden="true">Загрузить новый файл</button>
 
 
     <script>
@@ -66,8 +77,14 @@
                 target: div[0].childNodes[0]
             });
             var xhr = new XMLHttpRequest();
+            var form_data = new FormData($('#upload-file')[0]);
+            var percentFactor = 0;
+            if (document.getElementById('upload').files[0])
+            {
+                percentFactor = 50;
+            }
             xhr.upload.onprogress = function(event){
-                percent = parseInt(event.loaded * 50 / event.total);
+                percent = parseInt(event.loaded * percentFactor / event.total);
                 window.sessionStorage.setItem('percent',percent)
                 nanobar.go(percent);
                 $(div[0].childNodes[1]).text(percent + '%');
@@ -84,7 +101,7 @@
                 }
             }
             // send ajax POST request to start background job
-            var form_data = new FormData($('#upload-file')[0]);
+
             xhr.open('POST','/uploadfile', async=true)
             xhr.send(form_data);
         }

@@ -1,3 +1,6 @@
+"""
+Скрипт для создания схемы базы данных и папки для хранения миграций БД.
+"""
 import os.path
 
 from migrate.versioning import api

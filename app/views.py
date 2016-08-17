@@ -1,3 +1,6 @@
+"""
+Файл содержит скрипты представлений
+"""
 import os
 
 from app import flask_app
@@ -8,26 +11,37 @@ from app.celery_run import celery_app
 from app.tasks import upload_from_link, upload_from_disk
 import uuid
 
+
 @flask_app.route('/', methods=['GET'])
 def index():
+    """
+    Представление главной страницы
+
+    :return: Главная страница с формой для загрузки файла
+    """
     if request.method == 'GET':
         return render_template('index.html')
 
 
 
+
+
 @flask_app.route('/uploadfile', methods=['POST'])
 def uploadfile():
-    '''
+    """
+    Представление для начала загрузки файла. При нажатии на кнопку на главной странице
+    отправляется запрос на данное представление. В зависимости от того, ввёл пользователь ссылку на файл
+    или выбрал файл для загрузки в очередь Сelery добавляется соответствующая задача.
 
-    :return:
-    '''
+    :return: Возвращает статус 202 успешном добавлении задач в очередь
+    """
     if not request.files['file']:
         task = upload_from_link.delay(request.form['url_text'])
     else:
         file = request.files['file']
         filename = secure_filename(file.filename)
 
-        file_path = os.path.join(flask_app.config['UPLOAD_FOLDER'], str(uuid.uuid4()))
+        file_path = os.path.join(flask_app.config['UPLOAD_FOLDER'],filename + str(uuid.uuid4()))
         file.save(file_path)
         file.close()
         task = upload_from_disk.delay(file_path)
@@ -37,12 +51,12 @@ def uploadfile():
 
 @flask_app.route('/status/<task_id>')
 def taskstatus(task_id):
-    '''
-    Функция проверяет по пришедшему идентифкатору задачи состояние задачи в очереди и определяет процент выполнения задачи
+    """
+    Представление по task_id определяет статус задачи и возвращает информацию о его состоянии
 
     :param guid task_id: Идентификатор задачи в celery.
     :return: JSON объект, содержащий информация о состоянии задачи
-    '''
+    """
     task = celery_app.AsyncResult(task_id)
     print(task.state)
     print(task.info)
@@ -71,5 +85,3 @@ def taskstatus(task_id):
             'status': str(task.info),  # this is the exception raised
         }
     return jsonify(response)
-
-

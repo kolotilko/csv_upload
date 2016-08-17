@@ -1,7 +1,16 @@
+"""
+Скрипт с описанием моделей.
+"""
 from app import db
 
 
 class Category(db.Model):
+    """
+        Класс для хранения данных из скачиваемых файлов
+
+        :var id: Идентификатор записи в БД
+
+    """
     id = db.Column(db.Integer, primary_key=True)
     categories_id_lvl2 = db.Column(db.Text)
     categories_id_lvl4 = db.Column(db.Text)
@@ -24,6 +33,5 @@ class Category(db.Model):
     category_id = db.Column(db.Text)
     categories_name_lvl0 = db.Column(db.Text)
 
-    def __repr__(self):
-        return self.category_lvl_1
+
 
