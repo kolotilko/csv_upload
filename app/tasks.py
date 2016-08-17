@@ -39,7 +39,7 @@ def upload_from_disk(self, file_path):
     upload_to_database(self, data, total_bytes, upload_progress)
     data_file.close()
     os.remove(file_path)
-    return {'current': 100, 'total': 100, 'status': 'Загрузка и разбор заверешены'}
+    return {'current': 100, 'total': 100, 'status': 'Загрузка и разбор успешно заверешены'}
 
 
 @celery_app.task(bind=True)
@@ -88,7 +88,7 @@ def upload_from_link(self, link):
     upload_to_database(self, data, total_bytes, upload_progress)
     data_file.close()
 
-    return {'current': 100, 'total': 100, 'status': 'Загрузка и разбор завершены',
+    return {'current': 100, 'total': 100, 'status': 'Загрузка и разбор успешно завершены',
             'result': 42}
 
 

@@ -35,8 +35,13 @@ def uploadfile():
 
     :return: Возвращает статус 202 успешном добавлении задач в очередь
     """
-    if not request.files['file']:
+    # print(request.files['file'].filename)
+    file = request.files['file']
+    print(request.form)
+    if not file.filename:
+        print('test')
         task = upload_from_link.delay(request.form['url_text'])
+
     else:
         file = request.files['file']
         filename = secure_filename(file.filename)
@@ -46,7 +51,8 @@ def uploadfile():
         file.close()
         task = upload_from_disk.delay(file_path)
     return jsonify({}), 202, {'Location': url_for('taskstatus',
-                                                  task_id=task.id)}
+                                                  task_id=task.id),
+                              'err_message': ''}
 
 
 @flask_app.route('/status/<task_id>')
@@ -63,7 +69,7 @@ def taskstatus(task_id):
     if task.state == 'PENDING':
         response = {
             'state': task.state,
-            'current': 0,
+            'current': 0.5,
             'total': 1,
             'status': 'Постановка в очередь'
         }
