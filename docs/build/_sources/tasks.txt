@@ -1,0 +1,16 @@
+*******************************************
+Задачи для Celery
+*******************************************
+
+
+.. automodule:: app.tasks
+    :members:
+.. autofunction:: upload_from_disk(self, file_path)
+.. autofunction:: upload_from_link(self, link)
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

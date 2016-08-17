@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Задачи для Celery &mdash; Документация csv_upload 1.0</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/translations.js"></script>
+    <link rel="top" title="Документация csv_upload 1.0" href="index.html" />
+    <link rel="prev" title="Модели" href="models.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-app.tasks">
+<span id="celery"></span><h1>Задачи для Celery<a class="headerlink" href="#module-app.tasks" title="Ссылка на этот заголовок">¶</a></h1>
+<p>Файл со скриптами задач для Celery</p>
+<dl class="function">
+<dt id="app.tasks.get_data_file_from_archive">
+<code class="descclassname">app.tasks.</code><code class="descname">get_data_file_from_archive</code><span class="sig-paren">(</span><em>task</em>, <em>archive</em><span class="sig-paren">)</span><a class="headerlink" href="#app.tasks.get_data_file_from_archive" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Функция прсоматривает загруженный архив. Если в нём содержится больше одного csv файла, то генерируется исключение</p>
+<p>:param object task:Объект задачи. Нужен для обновления статуса задачи
+:param File archive: ссылка на архив
+:return: Вовращает количество байт в файле и файл с разархивированным содержанием</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="app.tasks.upload_to_database">
+<code class="descclassname">app.tasks.</code><code class="descname">upload_to_database</code><span class="sig-paren">(</span><em>task</em>, <em>data</em>, <em>total_bytes</em>, <em>progress</em><span class="sig-paren">)</span><a class="headerlink" href="#app.tasks.upload_to_database" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Функция для загрузки данных в БД. Итерирует по данным и  каждые SIZE_INSERTED_CHUNK записей
+создаёт insert-инструкции. После просмотра все записей делает commit транзкации в БД</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Параметры:</th><td class="field-body"><ul class="first simple">
+<li><strong>task</strong> (<em>object</em>) &#8211; Объект задачи необходимы для обновления состояния задачи</li>
+<li><strong>data</strong> (<em>iterator</em>) &#8211; Итератор по данным csv файла</li>
+<li><strong>progress</strong> (<em>float</em>) &#8211; Показатель текущего прогресса</li>
+<li><strong>total_bytes</strong> &#8211; Количество байт в данных. Необходимо для расчёта прогресса выполнения задачи</li>
+<li><strong>total_bytes</strong> &#8211; Количество байт в данных. Необходимо для расчёта прогресса выполнения задачи</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Результат:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="app.tasks.upload_from_disk">
+<code class="descclassname">app.tasks.</code><code class="descname">upload_from_disk</code><span class="sig-paren">(</span><em>self</em>, <em>file_path</em><span class="sig-paren">)</span><a class="headerlink" href="#app.tasks.upload_from_disk" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Загружает в БД данные из файла отправленного через форму.
+Если пришёл zip-архив, то он разархивируется и проверяется на корректность
+Для разбора csv-файла используется стандартная библиотека csv
+Файл после загрузки удаляется.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Переменные:</th><td class="field-body"><p class="first"><strong>total_bytes</strong> &#8211; Количество байт в файле. Нужно для расчёта процента выполненной работы.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Параметры:</th><td class="field-body"><ul class="first simple">
+<li><strong>self</strong> (<em>object</em>) &#8211; Объект, содержащий задачу. Нужен для обновления состояния задачи</li>
+<li><strong>file_path</strong> (<em>os.path</em>) &#8211; Путь к файлу с данными</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Результат:</th><td class="field-body"><p class="first last">Возвращает сообщение об успешном заверешении задачи.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="app.tasks.upload_from_link">
+<code class="descclassname">app.tasks.</code><code class="descname">upload_from_link</code><span class="sig-paren">(</span><em>self</em>, <em>link</em><span class="sig-paren">)</span><a class="headerlink" href="#app.tasks.upload_from_link" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Функция для загрузки и разбора файла по ссылке. Скачивает и записывает файл во временный файл.
+Если пришёл zip-архив, то он разархивируется.
+После этого происходит итерация по скачанному файлу и запись данных в БД.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Переменные:</th><td class="field-body"><p class="first"><strong>total_bytes</strong> &#8211; Количество байт в загружаемом файле</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Параметры:</th><td class="field-body"><ul class="first simple">
+<li><strong>self</strong> (<em>object</em>) &#8211; Объект задачи. Нужен для обновления статуса задачи</li>
+<li><strong>link</strong> (<em>str</em>) &#8211; Ссылка на файл с данным</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Результат:</th><td class="field-body"><p class="first last">Информацию об успешном завершении загрузки и разбора файла.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Ссылка на этот заголовок">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Алфавитный указатель</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Состав модуля</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Поиск</span></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Оглавление</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Задачи для Celery</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="models.html" title="предыдущая глава">Модели</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>Эта страница</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tasks.txt"
+            rel="nofollow">Исходный текст</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Быстрый поиск</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Искать" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Simon Reshetnyak.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/tasks.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

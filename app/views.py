@@ -35,17 +35,15 @@ def uploadfile():
 
     :return: Возвращает статус 202 успешном добавлении задач в очередь
     """
-    # print(request.files['file'].filename)
+
     file = request.files['file']
-    print(request.form)
+    #Если в форме нет файл, то запускается скачивание по ссылке
     if not file.filename:
-        print('test')
         task = upload_from_link.delay(request.form['url_text'])
-
     else:
-        file = request.files['file']
-        filename = secure_filename(file.filename)
 
+        filename = secure_filename(file.filename)
+        #Сохранение файла на диск
         file_path = os.path.join(flask_app.config['UPLOAD_FOLDER'],filename + str(uuid.uuid4()))
         file.save(file_path)
         file.close()
@@ -53,6 +51,7 @@ def uploadfile():
     return jsonify({}), 202, {'Location': url_for('taskstatus',
                                                   task_id=task.id),
                               'err_message': ''}
+
 
 
 @flask_app.route('/status/<task_id>')
@@ -64,15 +63,15 @@ def taskstatus(task_id):
     :return: JSON объект, содержащий информация о состоянии задачи
     """
     task = celery_app.AsyncResult(task_id)
-    print(task.state)
-    print(task.info)
+    #Задача в очереди
     if task.state == 'PENDING':
         response = {
             'state': task.state,
             'current': 0.5,
             'total': 1,
-            'status': 'Постановка в очередь'
+            'status': 'В очереди'
         }
+    #Задача выполняется и из неё можно получить данные о процессе выполнения
     elif task.state != 'FAILURE':
         response = {
             'state': task.state,
@@ -82,12 +81,12 @@ def taskstatus(task_id):
         }
         if 'result' in task.info:
             response['result'] = task.info['result']
+    #Скрипт выполнения задачи вызвал исключение
     else:
-        # something went wrong in the background job
         response = {
             'state': task.state,
             'current': 1,
             'total': 1,
-            'status': str(task.info),  # this is the exception raised
+            'status': str(task.info),
         }
     return jsonify(response)

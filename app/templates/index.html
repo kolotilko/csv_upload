@@ -17,12 +17,13 @@
 
   <body>
 
-    <h1>Upload File Form</h1>
+    <h1>Форма загрузки файла</h1>
 
+    <!--Форма загрузки файла. Кнопка выбора файла скрыта и ей поведение эмулируется через кнопку Обзор -->
     <div id="alert_container_fail"></div>
   <form class="form-inline" id="upload_file" method="post" enctype="multipart/form-data">
 
-             <label for="filename">Файл:</label>
+             <label for="filename">Файл или ссылка:</label>
             <div class="input-group" style="width:100%">
               <input type="text" class="form-control" name="url_text"  value="" id="filename" placeholder="example.csv or example.zip.csv">
               <input type="file" name="file"  id="upload" style="display:none">
@@ -36,158 +37,160 @@
 
           </div>
   </form>
-
+    <!--Прогресс бар-->
     <div class="progress  hidden" id="progressdiv">
-        <div class="progress-bar" role="progressbar" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="width: 0%" id="progressbar">
+        <div class="progress-bar" role="progressbar" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="width: 0%; min-width:2em;" id="progressbar">
 
         </div>
     </div>
-
+    <!--Контейнер для сообщения об успешном завершении задачи-->
     <div id="alert_container_success"></div>
 
     <button id="refresh" type="button"  class="btn btn-primary hidden" >Загрузить новый файл</button>
 
 
     <script>
-        upload.onchange = uploadOnChange;
-        function uploadOnChange()
-        {
-            var name = this.value;
-            var lastIndex = name.lastIndexOf('\\');
-            if (lastIndex >= 0)
-            {
-                name = name.substring(lastIndex+1);
-            }
-            filename.value = name
-        }
-        status_url = sessionStorage.getItem('status_url')
-        if (status_url)
-        {
-            filename.disabled = true;
-            browse.disabled = true;
-            upload_file_btn.disabled = true;
-            progressdiv.classList.remove('hidden');
-            percent = sessionStorage.getItem('percent')
+//При загрузке добавляем функцию для копирования имени файла в поле ввода
+upload.onchange = uploadOnChange;
+function uploadOnChange() {
+	var name = this.value;
+	var lastIndex = name.lastIndexOf('\\');
+	if (lastIndex >= 0) {
+		name = name.substring(lastIndex + 1);
+	}
+	filename.value = name
+}
+//Проверяем переменную, в которой хранится информация, о том запускалась ли задача на этой странице
+status_url = sessionStorage.getItem('status_url')
+	//Если задача запущена, то устанавливаем значения прогрессбара и блокируем кнопки
+	if (status_url) {
+		filename.disabled = true;
+		browse.disabled = true;
+		upload_file_btn.disabled = true;
+		progressdiv.classList.remove('hidden');
+		percent = sessionStorage.getItem('percent')
 
-            progressbar.style.setProperty('width',percent+'%')
-            progressbar.innerText=percent+'%'
-            update_progress(status_url, progressbar)
-        }
-        function start_upload_file() {
-            // add task status elements
-            filename.disabled = true;
-            browse.disabled = true;
-            upload_file_btn.disabled = true;
-            progressdiv.classList.remove('hidden');
+			progressbar.style.setProperty('width', percent + '%')
+			progressbar.innerText = percent + '%'
+			update_progress(status_url, progressbar)
+	}
 
-            var xhr = new XMLHttpRequest();
-            var form_data = new FormData($('#upload_file')[0]);
-            url_text = filename.value;
-            form_data.set('url_text', url_text)
+function start_upload_file() {
+	//Функция отправки запроса к серверу. При получении запроса сервер ставит задачу в очередь
+	filename.disabled = true;
+	browse.disabled = true;
+	upload_file_btn.disabled = true;
+	progressdiv.classList.remove('hidden');
 
-            var percentFactor = 0;
-            if (upload.files[0])
-            {
-                percentFactor = 50;
-            }
-            xhr.upload.onprogress = function(event){
-                percent = parseInt(event.loaded * percentFactor / event.total);
-                window.sessionStorage.setItem('percent',percent)
-                progressbar.style.setProperty('width',percent+'%')
-                progressbar.innerText=percent+'% ' + 'Загрузка файла'
-            }
-            xhr.onload = xhr.onerror = function(event){
-                if (this.status == 202)
-                {
-                    status_url = this.getResponseHeader('Location');
-                    window.sessionStorage.setItem('status_url', status_url);
-                    update_progress(status_url, progressbar);
-                }
-                else
-                {
+	var xhr = new XMLHttpRequest();
+	var form_data = new FormData($('#upload_file')[0]);
+	url_text = filename.value;
+	form_data.set('url_text', url_text)
 
-                    upload_alert.append('<div class="alert alert-danger alert-dismissible" role="alert" style="width:50%" id="upload_alert">\
-                                                      <button type="button" class="close"\
-                                                       data-dismiss="alert" aria-label="Close">\
-                                                    <span aria-hidden="true">&times;</span></button>\
-                                                ' + this.getResponseHeader('err_mess') + '</div>')
-                    $('#upload_alert').on('closed.bs.alert', function () {
-                      upload_file.reset();
-                      filename.disabled = false;
-                      browse.disabled = false;
-                      progressdiv.classList.add('hidden')
-                      upload_file_btn.disabled = false;
-                    })
+	var percentFactor = 0;
+	if (upload.files[0]) {
+		percentFactor = 50;
+	}
+	//Отображение процесса закачки файла на сервер
+	xhr.upload.onprogress = function (event) {
+		percent = parseInt(event.loaded * percentFactor / event.total);
+		window.sessionStorage.setItem('percent', percent)
+		progressbar.style.setProperty('width', percent + '%')
+		progressbar.innerText = percent + '% ' + 'Загрузка файла'
+	}
+	//Если сервер принимает задачу, то запускаем функцию периодического обновления данных о состоянии задачи.
+	xhr.onload = xhr.onerror = function (event) {
+		if (this.status == 202) {
+			status_url = this.getResponseHeader('Location');
+			window.sessionStorage.setItem('status_url', status_url);
+			update_progress(status_url, progressbar);
+		} else {
+			//Если вернулась ошибка, то отображаем сообщение
+			upload_alert.append('<div class="alert alert-danger alert-dismissible" role="alert" style="width:50%" id="upload_alert">\
+				                                                      <button type="button" class="close"\
+				                                                       data-dismiss="alert" aria-label="Close">\
+				                                                    <span aria-hidden="true">&times;</span></button>\
+				                                                ' + this.getResponseHeader('err_mess') + '</div>')
+			$('#upload_alert').on('closed.bs.alert', function () {
+				upload_file.reset();
+				filename.disabled = false;
+				browse.disabled = false;
+				progressdiv.classList.add('hidden')
+				upload_file_btn.disabled = false;
+			})
 
-                }
-            }
+		}
+	}
 
-            xhr.open('POST','/uploadfile', async=true)
-            xhr.send(form_data);
-        }
-        function update_progress(status_url, progressbar) {
-            // send GET request to status URL
-            $.getJSON(status_url, function(data) {
-                // update UI
-                if (data['state'] == 'PROGRESS' || data['state'] == 'PENDING')
-                {
-                    percent = parseInt(data['current'] * 100 / data['total']);
-                    progressbar.style.setProperty('width',percent+'%');
-                    progressbar.innerText = percent + '% ' + data['status']
-                    setTimeout(function() {
-                        update_progress(status_url, progressbar);
-                    }, 2000);
-                }
-                if (data['state'] == 'SUCCESS' || data['state'] == 'FAILURE')
-                {
-                    window.sessionStorage.removeItem('percent',percent)
-                    window.sessionStorage.removeItem('status_url')
-                    document.getElementById('refresh').classList.remove('hidden');
-                    if (data['state'] == 'SUCCESS')
-                    {
-                      progressbar.style.setProperty('width','100%');
-                      progressbar.innerText = '100%'
-                      $('#alert_container_success').append('<div class="alert alert-success alert-dismissible" role="alert" style="width:50%" id="upload_alert">\
-                                                        <button type="button" class="close"\
-                                                         data-dismiss="alert" aria-label="Close">\
-                                                      <span aria-hidden="true">&times;</span></button>\
-                                                  ' + data['status'] + '</div>');
-                    }
-                    if (data['state'] == 'FAILURE')
-                    {
+	xhr.open('POST', '/uploadfile', async = true)
+	xhr.send(form_data);
+}
+function update_progress(status_url, progressbar) {
+	// Функция получения данных о состоянии задачи и обновления прогрессбара
+	$.getJSON(status_url, function (data) {
 
-                      document.getElementById('progressdiv').classList.add('hidden');
-                      $('#alert_container_fail').append('<div class="alert alert-danger alert-dismissible" role="alert" style="width:50%" id="upload_alert">\
-                                                        <button type="button" class="close"\
-                                                         data-dismiss="alert" aria-label="Close">\
-                                                      <span aria-hidden="true">&times;</span></button>\
-                                                  ' + data['status'] + '</div>');
+		if (data['state'] == 'PROGRESS' || data['state'] == 'PENDING') {
+			if (data['state'] == 'PENDING') {
+				percent = window.sessionStorage.getItem('percent')
+			} else {
+				percent = parseInt(data['current'] * 100 / data['total']);
+			}
+			window.sessionStorage.setItem('percent', percent)
+			progressbar.style.setProperty('width', percent + '%');
+			progressbar.innerText = percent + '% ' + data['status']
+				setTimeout(function () {
+					update_progress(status_url, progressbar);
+				}, 2000);
+		}
+		if (data['state'] == 'SUCCESS' || data['state'] == 'FAILURE') {
+		    //При успешном выполнении задачи удаляем информацию о ней из локального хранилища
+			window.sessionStorage.removeItem('percent', percent)
+			window.sessionStorage.removeItem('status_url')
+			document.getElementById('refresh').classList.remove('hidden');
+			if (data['state'] == 'SUCCESS') {
+				progressbar.style.setProperty('width', '100%');
+				progressbar.innerText = '100%'
+					//Отображение сообщения о успешном заверщении задачи
+					$('#alert_container_success').append('<div class="alert alert-success alert-dismissible" 		role="alert" style="width:50%" id="upload_alert">\
+						                                                        <button type="button" class="close"\
+						                                                         data-dismiss="alert" aria-label="Close">\
+						                                                      <span aria-hidden="true">&times;</span></button>\
+						                                                  ' + data['status'] + '</div>');
+			}
+			if (data['state'] == 'FAILURE') {
+				//Отображение сообщения об ошибке при выполнении задачи
+				document.getElementById('progressdiv').classList.add('hidden');
+				$('#alert_container_fail').append('<div class="alert alert-danger alert-dismissible" role="alert" style="width:50%" id="upload_alert">\
+					                                                        <button type="button" class="close"\
+					                                                         data-dismiss="alert" aria-label="Close">\
+					                                                      <span aria-hidden="true">&times;</span></button>\
+					                                                  ' + data['status'] + '</div>');
 
-                      }
+			}
 
-                }
+		}
 
-            });
-        }
-        $(function() {
-            $('#upload_file_btn').click(start_upload_file);
-        }
-        )
-        $(function() {
-            $('#refresh').click(function(){
-                                           $('#alert_container_fail').empty()
-                                           $('#alert_container_success').empty()
-                                           progressdiv.classList.add('hidden');
-                                           refresh.classList.add('hidden');
-                                           upload_file.reset();
-                                           filename.disabled = false;
-                                           browse.disabled = false;
-                                           upload_file_btn.disabled = false;});
+	});
+}
+//Старт загрузки файла
+$(function () {
+	$('#upload_file_btn').click(start_upload_file);
+})
+//Кнопка "Загрузить новый файл" очищает форму и разблокирует кнопки
+$(function () {
+	$('#refresh').click(function () {
+		$('#alert_container_fail').empty()
+		$('#alert_container_success').empty()
+		progressdiv.classList.add('hidden');
+		refresh.classList.add('hidden');
+		progressbar.style.setProperty('width', '0%');
+		upload_file.reset();
+		filename.disabled = false;
+		browse.disabled = false;
+		upload_file_btn.disabled = false;
+	});
 
-            }
-        )
-
-          ;
+});
     </script>
   </body>
 </html>
