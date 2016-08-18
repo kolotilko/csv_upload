@@ -64,6 +64,7 @@ function uploadOnChange() {
 status_url = sessionStorage.getItem('status_url')
 	//Если задача запущена, то устанавливаем значения прогрессбара и блокируем кнопки
 	if (status_url) {
+
 		filename.disabled = true;
 		browse.disabled = true;
 		upload_file_btn.disabled = true;
@@ -94,7 +95,7 @@ function start_upload_file() {
 	//Отображение процесса закачки файла на сервер
 	xhr.upload.onprogress = function (event) {
 		percent = parseInt(event.loaded * percentFactor / event.total);
-		window.sessionStorage.setItem('percent', percent)
+		sessionStorage.setItem('percent', percent)
 		progressbar.style.setProperty('width', percent + '%')
 		progressbar.innerText = percent + '% ' + 'Загрузка файла'
 	}
@@ -102,7 +103,7 @@ function start_upload_file() {
 	xhr.onload = xhr.onerror = function (event) {
 		if (this.status == 202) {
 			status_url = this.getResponseHeader('Location');
-			window.sessionStorage.setItem('status_url', status_url);
+			sessionStorage.setItem('status_url', status_url);
 			update_progress(status_url, progressbar);
 		} else {
 			//Если вернулась ошибка, то отображаем сообщение
@@ -131,11 +132,11 @@ function update_progress(status_url, progressbar) {
 
 		if (data['state'] == 'PROGRESS' || data['state'] == 'PENDING') {
 			if (data['state'] == 'PENDING') {
-				percent = window.sessionStorage.getItem('percent')
+				percent = sessionStorage.getItem('percent')
 			} else {
 				percent = parseInt(data['current'] * 100 / data['total']);
 			}
-			window.sessionStorage.setItem('percent', percent)
+			sessionStorage.setItem('percent', percent)
 			progressbar.style.setProperty('width', percent + '%');
 			progressbar.innerText = percent + '% ' + data['status']
 				setTimeout(function () {
@@ -144,10 +145,11 @@ function update_progress(status_url, progressbar) {
 		}
 		if (data['state'] == 'SUCCESS' || data['state'] == 'FAILURE') {
 		    //При успешном выполнении задачи удаляем информацию о ней из локального хранилища
-			window.sessionStorage.removeItem('percent', percent)
-			window.sessionStorage.removeItem('status_url')
+			sessionStorage.removeItem('percent', percent)
+			sessionStorage.removeItem('status_url')
 			document.getElementById('refresh').classList.remove('hidden');
 			if (data['state'] == 'SUCCESS') {
+			    $(progressbar).attr('testattribute', 'suc')
 				progressbar.style.setProperty('width', '100%');
 				progressbar.innerText = '100%'
 					//Отображение сообщения о успешном заверщении задачи
@@ -159,6 +161,7 @@ function update_progress(status_url, progressbar) {
 			}
 			if (data['state'] == 'FAILURE') {
 				//Отображение сообщения об ошибке при выполнении задачи
+				$(alert_container_fail).attr('testattribute', 'fail')
 				document.getElementById('progressdiv').classList.add('hidden');
 				$('#alert_container_fail').append('<div class="alert alert-danger alert-dismissible" role="alert" style="width:50%" id="upload_alert">\
 					                                                        <button type="button" class="close"\

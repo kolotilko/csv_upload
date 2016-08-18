@@ -35,9 +35,8 @@ def upload_from_disk(self, file_path):
                 data_file, total_bytes = get_data_file_from_archive(self, archive)
                 upload_progress = 0.75
         except zipfile.BadZipFile:
-            raise Exception('Неправильный формат архива')
-        finally:
             os.remove(file_path)
+            raise Exception('Неправильный формат архива')
     else:
         data_file = open(file_path, 'r', encoding='utf-8')
         upload_progress = 0.5

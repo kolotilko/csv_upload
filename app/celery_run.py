@@ -5,9 +5,8 @@
 from __future__ import absolute_import
 from celery import Celery
 
-
-CELERY_BROKER='amqp://guest@localhost//'
-CELERY_BACKEND='redis://localhost'
+CELERY_BROKER = 'amqp://guest@localhost//'
+CELERY_BACKEND = 'redis://localhost'
 celery_app = Celery('app.celery_run',
                     broker=CELERY_BROKER,
                     backend=CELERY_BACKEND,
