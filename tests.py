@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import NoAlertPresentException
 import unittest
@@ -10,6 +7,7 @@ import time
 import os
 from app import db
 from app.models import Category
+
 
 class Testcase(unittest.TestCase):
     def setUp(self):
@@ -28,7 +26,7 @@ class Testcase(unittest.TestCase):
         :return: Если статус или сообщение не совпадают с эталонным, то ставить тесту статус "Не пройден"
         """
         driver = self.driver
-        #Цикл для ожидания завершения задачи
+        # Цикл для ожидания завершения задачи
         for i in range(60):
             status_success = ''
             status_fail = ''
@@ -36,7 +34,7 @@ class Testcase(unittest.TestCase):
                 status_success = driver.find_element_by_id("progressbar").get_attribute("testattribute")
             except:
                 pass
-            #Поиска сообщения в ответе приложения
+            # Поиска сообщения в ответе приложения
             if status_success == 'suc':
                 if test_correct:
                     if not (search_message in driver.find_element_by_id("upload_alert").text):
@@ -69,7 +67,8 @@ class Testcase(unittest.TestCase):
         driver = self.driver
         driver.get(self.base_url + "/")
         driver.find_element_by_id("filename").clear()
-        driver.find_element_by_id("filename").send_keys("http://spatialkeydocs.s3.amazonaws.com/FL_insurance_sample.csv.zip")
+        link = "http://spatialkeydocs.s3.amazonaws.com/FL_insurance_sample.csv.zip"
+        driver.find_element_by_id("filename").send_keys(link)
         driver.find_element_by_id("upload_file_btn").click()
         self.check_status(True, 'Загрузка и разбор')
 
@@ -93,7 +92,8 @@ class Testcase(unittest.TestCase):
         driver = self.driver
         driver.get(self.base_url + "/")
         driver.find_element_by_id("filename").clear()
-        driver.find_element_by_id("filename").send_keys("http://samplecsvs.s3.amazonaws.com/Sacramentorealestatetransactions.csv")
+        driver.find_element_by_id("filename").send_keys(
+            "http://samplecsvs.s3.amazonaws.com/Sacramentorealestatetransactions.csv")
         driver.find_element_by_id("upload_file_btn").click()
         self.check_status(True, 'Загрузка и разбор')
 
@@ -118,7 +118,8 @@ class Testcase(unittest.TestCase):
         driver.get(self.base_url + "/")
         driver.execute_script('document.getElementById("upload").style=""')
         driver.find_element_by_id("upload").clear()
-        driver.find_element_by_id("upload").send_keys(os.path.join(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'test_files'), 'bad.zip' ))
+        driver.find_element_by_id("upload").send_keys(
+            os.path.join(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'test_files'), 'bad.zip'))
         driver.find_element_by_id("upload_file_btn").click()
         self.check_status(False, 'Неправильный формат архива')
 
@@ -179,18 +180,22 @@ class Testcase(unittest.TestCase):
         driver.find_element_by_id("upload_file_btn").click()
         self.check_status(True, 'Загрузка и разбор')
         new_count = db.session.query(Category.id).count()
-        self.assertEqual(new_count-initial_count, 9)
+        self.assertEqual(new_count - initial_count, 9)
 
     def is_element_present(self, how, what):
-        try: self.driver.find_element(by=how, value=what)
-        except NoSuchElementException as e: return False
+        try:
+            self.driver.find_element(by=how, value=what)
+        except NoSuchElementException as e:
+            return False
         return True
-    
+
     def is_alert_present(self):
-        try: self.driver.switch_to_alert()
-        except NoAlertPresentException as e: return False
+        try:
+            self.driver.switch_to_alert()
+        except NoAlertPresentException as e:
+            return False
         return True
-    
+
     def close_alert_and_get_its_text(self):
         try:
             alert = self.driver.switch_to_alert()
@@ -200,11 +205,13 @@ class Testcase(unittest.TestCase):
             else:
                 alert.dismiss()
             return alert_text
-        finally: self.accept_next_alert = True
-    
+        finally:
+            self.accept_next_alert = True
+
     def tearDown(self):
         self.driver.quit()
         self.assertEqual([], self.verificationErrors)
+
 
 if __name__ == "__main__":
     unittest.main()

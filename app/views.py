@@ -23,9 +23,6 @@ def index():
         return render_template('index.html')
 
 
-
-
-
 @flask_app.route('/uploadfile', methods=['POST'])
 def uploadfile():
     """
@@ -37,21 +34,20 @@ def uploadfile():
     """
 
     file = request.files['file']
-    #Если в форме нет файл, то запускается скачивание по ссылке
+    # Если в форме нет файл, то запускается скачивание по ссылке
     if not file.filename:
         task = upload_from_link.delay(request.form['url_text'])
     else:
 
         filename = secure_filename(file.filename)
-        #Сохранение файла на диск
-        file_path = os.path.join(flask_app.config['UPLOAD_FOLDER'],filename + str(uuid.uuid4()))
+        # Сохранение файла на диск
+        file_path = os.path.join(flask_app.config['UPLOAD_FOLDER'], filename + str(uuid.uuid4()))
         file.save(file_path)
         file.close()
         task = upload_from_disk.delay(file_path)
     return jsonify({}), 202, {'Location': url_for('taskstatus',
                                                   task_id=task.id),
                               'err_message': ''}
-
 
 
 @flask_app.route('/status/<task_id>')
@@ -63,7 +59,7 @@ def taskstatus(task_id):
     :return: JSON объект, содержащий информация о состоянии задачи
     """
     task = celery_app.AsyncResult(task_id)
-    #Задача в очереди
+    # Задача в очереди
     if task.state == 'PENDING':
         response = {
             'state': task.state,
@@ -71,7 +67,7 @@ def taskstatus(task_id):
             'total': 1,
             'status': 'В очереди'
         }
-    #Задача выполняется и из неё можно получить данные о процессе выполнения
+    # Задача выполняется и из неё можно получить данные о процессе выполнения
     elif task.state != 'FAILURE':
         response = {
             'state': task.state,
@@ -81,7 +77,7 @@ def taskstatus(task_id):
         }
         if 'result' in task.info:
             response['result'] = task.info['result']
-    #Скрипт выполнения задачи вызвал исключение
+    # Скрипт выполнения задачи вызвал исключение
     else:
         response = {
             'state': task.state,

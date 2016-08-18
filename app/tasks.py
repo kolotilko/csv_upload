@@ -11,6 +11,7 @@ import csv
 import os
 import tempfile
 from sqlalchemy.exc import SQLAlchemyError
+
 SIZE_INSERTED_CHUNK = 1000
 
 
@@ -28,7 +29,7 @@ def upload_from_disk(self, file_path):
     :return: Возвращает сообщение об успешном заверешении задачи.
     """
     total_bytes = os.path.getsize(file_path)
-    #Разбор zip-архива
+    # Разбор zip-архива
     if zipfile.is_zipfile(file_path):
         try:
             with zipfile.ZipFile(file_path, 'r') as archive:
@@ -41,7 +42,7 @@ def upload_from_disk(self, file_path):
         data_file = open(file_path, 'r', encoding='utf-8')
         upload_progress = 0.5
     try:
-        #Загрузка данных в БД
+        # Загрузка данных в БД
         data = csv.DictReader(data_file, delimiter='\t')
         upload_to_database(self, data, total_bytes, upload_progress)
     except SQLAlchemyError:
@@ -68,7 +69,7 @@ def upload_from_link(self, link):
     :param str link: Ссылка на файл с данным
     :return: Информацию об успешном завершении загрузки и разбора файла.
     """
-    #Открытие ссылки
+    # Открытие ссылки
     try:
         remote_file = urlopen(link)
         total_bytes = int(remote_file.getheader('Content-Length'))
@@ -77,7 +78,7 @@ def upload_from_link(self, link):
         raise Exception('Неправильная ссылка')
     except (URLError, TypeError):
         raise Exception('Ошибка соединения')
-    #Если по ссылке архив, то распаковываем его
+    # Если по ссылке архив, то распаковываем его
     if application_type == 'application/zip':
         archive_file = tempfile.TemporaryFile(mode='rb+')
         viewed_bytes = 0
@@ -98,7 +99,7 @@ def upload_from_link(self, link):
             archive_file.close()
         upload_progress = 0.75
     else:
-        #Записываем данные по ссылке во временный файл
+        # Записываем данные по ссылке во временный файл
         data_file = tempfile.NamedTemporaryFile(mode='r+', encoding='utf-8')
         viewed_bytes = 0
         for i, line in enumerate(remote_file):
@@ -112,7 +113,7 @@ def upload_from_link(self, link):
         data_file.seek(0)
         upload_progress = 0.5
 
-    #Загрузка данных в БД
+    # Загрузка данных в БД
     data = csv.DictReader(data_file, delimiter='\t')
     try:
         upload_to_database(self, data, total_bytes, upload_progress)
@@ -143,19 +144,20 @@ def upload_to_database(task, data, total_bytes, progress):
     """
     viewed_bytes = 0
     records_list = []
-    #Цикл по строкам
+    # Цикл по строкам
     for index, line in enumerate(data):
         for col in line:
             viewed_bytes += len(line[col].encode('utf-8'))
-        #Создаём пакет инструкция для вставки
+        # Создаём пакет инструкция для вставки
         if index % SIZE_INSERTED_CHUNK == 0:
             db.session.bulk_insert_mappings(Category, records_list)
             records_list = []
         records_list.append(line)
-        #Обновляем информацию о состоянии задачи
+        # Обновляем информацию о состоянии задачи
         if index % SIZE_INSERTED_CHUNK == 0:
             task.update_state(state='PROGRESS',
-                              meta={'current': (progress*total_bytes + (1-progress)*viewed_bytes), 'total': total_bytes,
+                              meta={'current': (progress * total_bytes + (1 - progress) * viewed_bytes),
+                                    'total': total_bytes,
                                     'status': 'Разбор файла'})
     db.session.bulk_insert_mappings(Category, records_list)
     db.session.commit()
@@ -169,9 +171,9 @@ def get_data_file_from_archive(task, archive):
     :param File archive: ссылка на архив
     :return: Вовращает количество байт в файле и файл с разархивированным содержанием
     """
-    #Получение списка файлов в архиве. Не учитываются файлы, содержаище __MACOSX в названии
+    # Получение списка файлов в архиве. Не учитываются файлы, содержаище __MACOSX в названии
     csv_file_list = list(filter(lambda x: '__MACOSX' not in x.filename, archive.infolist()))
-    #Если файлов больше одного, то генериутеся ошибка
+    # Если файлов больше одного, то генериутеся ошибка
     if len(csv_file_list) > 1:
         raise zipfile.BadZipFile
     else:
@@ -179,7 +181,7 @@ def get_data_file_from_archive(task, archive):
         binary_file = archive.open(csv_file_list[0])
         data_file = tempfile.NamedTemporaryFile(mode='r+', encoding='utf-8')
         viewed_bytes = 0
-        #Записываем бинарные данные во временные файл в понятном csv парсера формате
+        # Записываем бинарные данные во временные файл в понятном csv парсера формате
         for i, line in enumerate(binary_file):
             viewed_bytes += len(line)
             data_file.write(line.decode('utf-8'))
@@ -187,7 +189,7 @@ def get_data_file_from_archive(task, archive):
                 task.update_state(state='PROGRESS',
                                   meta={'current': total_bytes + viewed_bytes // 2, 'total': 2 * total_bytes,
                                         'status': 'Распаковка архива'})
-        #Перход к началу файла
+        # Перход к началу файла
         data_file.seek(0)
         binary_file.close()
     return data_file, total_bytes
